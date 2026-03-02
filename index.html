@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tank Battle</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; color:#fff; font-family:'Courier New',monospace; overflow:hidden; }
+  #canvas { display:block; }
+  #hud { position:fixed; top:0; left:0; width:100%; pointer-events:none; display:flex; justify-content:space-between; padding:10px 20px; flex-wrap:wrap; gap:6px; }
+  .player-hud { background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:8px 14px; min-width:160px; }
+  .player-name { font-size:13px; font-weight:bold; margin-bottom:4px; }
+  .health-bar-bg { height:7px; border-radius:3px; margin:3px 0; background:rgba(255,255,255,0.1); width:130px; }
+  .health-bar { height:7px; border-radius:3px; }
+  .fuel-bar-bg { height:5px; border-radius:3px; margin:2px 0; background:rgba(255,255,255,0.08); width:130px; }
+  .fuel-bar { height:5px; border-radius:3px; background:#fa0; }
+  .hud-stat { font-size:11px; color:#aaa; }
+  #lobby { position:fixed; inset:0; background:rgba(0,0,0,0.93); display:flex; flex-direction:column; align-items:center; justify-content:safe center; gap:16px; z-index:10; overflow-y:auto; padding:20px 0; }
+  #preBattle { position:fixed; inset:0; background:rgba(0,0,0,0.96); display:none; flex-direction:column; align-items:center; justify-content:safe center; gap:16px; z-index:11; overflow-y:auto; padding:20px 0; }
+  #preBattle h2 { font-size:22px; letter-spacing:6px; color:#fff; text-shadow:0 0 20px #fa0; }
+  .pb-row { display:flex; gap:16px; width:580px; }
+  .pb-row .lobby-section { width:auto; flex:1; min-width:0; }
+  .pb-full { width:580px; }
+  .pb-tank-info { display:flex; gap:14px; align-items:flex-start; }
+  .pb-tank-meta { flex:1; min-width:0; }
+  #pbTankCanvas { border:1px solid rgba(255,255,255,0.1); border-radius:6px; background:#1a1a0a; flex-shrink:0; }
+  #pbTankName { font-size:13px; color:#fff; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #pbRarity { font-size:11px; letter-spacing:1px; margin-bottom:8px; }
+  .repair-kit-color { color:#4f8; }
+  .pb-actions { display:flex; gap:12px; align-items:center; }
+  #lobby h1 { font-size:48px; letter-spacing:8px; color:#fff; text-shadow:0 0 30px #fa0; }
+  #lobby h2 { font-size:15px; color:#fa0; letter-spacing:4px; }
+  .lobby-section { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.13); border-radius:10px; padding:18px; width:580px; }
+  .lobby-section h3 { font-size:12px; color:#fa0; letter-spacing:2px; margin-bottom:12px; }
+  .controls { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  button { background:rgba(255,170,0,0.12); border:1px solid #fa0; color:#fa0; padding:8px 16px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:13px; transition:all 0.2s; }
+  button:hover { background:rgba(255,170,0,0.28); }
+  button.primary { background:#fa0; color:#000; font-weight:bold; font-size:15px; padding:12px 32px; border:none; }
+  button.primary:hover { background:#fc4; }
+  button.wallet-btn { background:rgba(153,69,255,0.15); border-color:#9945FF; color:#9945FF; }
+  button.wallet-btn:hover { background:rgba(153,69,255,0.3); }
+  button.wallet-btn.connected { background:rgba(20,241,149,0.12); border-color:#14F195; color:#14F195; }
+  button.wallet-btn.connected:hover { background:rgba(20,241,149,0.25); }
+  button.mint-btn { background:rgba(255,200,80,0.15); border-color:#fa0; color:#fa0; }
+  button.mint-btn:disabled { opacity:0.35; cursor:not-allowed; }
+  .player-list { display:flex; flex-direction:column; gap:8px; }
+  .player-entry { display:flex; align-items:center; gap:10px; font-size:13px; }
+  .player-dot { width:12px; height:12px; border-radius:2px; }
+  .key-help { font-size:11px; color:#aaa; line-height:2.1; }
+  #gameOver { position:fixed; inset:0; background:rgba(0,0,0,0.87); display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:10; }
+  #gameOver h2 { font-size:40px; color:#fa0; letter-spacing:4px; }
+  .scoreboard { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.13); border-radius:10px; padding:20px; min-width:300px; }
+  .score-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.07); font-size:14px; }
+  .gene-stats { display:grid; grid-template-columns:1fr 1fr; gap:5px; flex:1; }
+  .gene-stat { font-size:11px; }
+  .gene-stat span { color:#fa0; }
+  .stat-bar-wrap { height:4px; background:#111; border-radius:2px; margin-top:2px; }
+  .stat-bar { height:4px; border-radius:2px; background:linear-gradient(90deg,#f84,#fa0); }
+
+  /* Wallet bar */
+  #walletBar { width:580px; display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(153,69,255,0.07); border:1px solid rgba(153,69,255,0.25); border-radius:10px; padding:12px 18px; }
+  .wallet-info { display:flex; flex-direction:column; gap:3px; }
+  .wallet-label { font-size:10px; color:#9945FF; letter-spacing:2px; }
+  .wallet-address { font-size:12px; color:#ddd; }
+  .wallet-balance { font-size:11px; color:#14F195; }
+  .phantom-logo { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#9945FF,#14F195); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+
+  /* NFT collection strip */
+  #nftStrip { width:580px; }
+  #nftStrip h3 { font-size:12px; color:#fa0; letter-spacing:2px; margin-bottom:10px; }
+  .nft-grid { display:flex; gap:10px; flex-wrap:wrap; }
+  .nft-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:8px; cursor:pointer; transition:all 0.2s; position:relative; }
+  .nft-card:hover { border-color:#fa0; background:rgba(255,200,80,0.08); }
+  .nft-card.selected { border-color:#fa0; background:rgba(255,200,80,0.12); box-shadow:0 0 12px rgba(255,200,80,0.2); }
+  .nft-card canvas { display:block; border-radius:4px; }
+  .nft-card-name { font-size:10px; color:#aaa; text-align:center; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:72px; }
+  .nft-rarity-dot { position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; }
+  .nft-empty { font-size:11px; color:#555; font-style:italic; }
+
+  /* Mint status toast */
+  #mintToast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.92); border:1px solid rgba(255,200,80,0.4); border-radius:8px; padding:12px 24px; font-size:13px; color:#fa0; display:none; z-index:30; white-space:nowrap; }
+
+  /* ── Mint progress modal ───────────────────────────────────────────────────── */
+  #mintProgressModal { position:fixed;inset:0;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;z-index:25; }
+  #mintProgressModal.open { display:flex; }
+  .mpm-card { background:#090909;border:1px solid rgba(255,200,80,0.22);border-radius:14px;padding:28px 32px;width:420px;max-width:94vw;font-family:'Courier New',monospace;display:flex;flex-direction:column;gap:18px; }
+  .mpm-card.success { border-color:rgba(20,241,149,0.4); }
+  .mpm-card.error   { border-color:rgba(255,80,80,0.4); }
+  .mpm-title { font-size:15px;letter-spacing:4px;color:#fa0;text-align:center; }
+  .mpm-subtitle { font-size:11px;color:#555;text-align:center;margin-top:-10px;letter-spacing:1px; }
+  .mpm-steps { display:flex;flex-direction:column;gap:4px; }
+  .mpm-step { display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:8px;transition:background 0.3s; }
+  .mpm-step.active { background:rgba(255,200,80,0.07); }
+  .mpm-step.done   { background:rgba(20,241,149,0.05); }
+  .mpm-icon { width:22px;height:22px;border-radius:50%;border:1.5px solid #2a2a2a;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:1px;transition:all 0.3s;color:#333; }
+  .mpm-step.active .mpm-icon { border-color:#fa0;color:#fa0; }
+  .mpm-step.done   .mpm-icon { border-color:#14F195;color:#14F195;background:rgba(20,241,149,0.1); }
+  .mpm-label { font-size:13px;color:#444;transition:color 0.3s; }
+  .mpm-step.active .mpm-label { color:#fff; }
+  .mpm-step.done   .mpm-label { color:#14F195; }
+  .mpm-sub { font-size:11px;color:#9945FF;margin-top:3px;min-height:14px; }
+  @keyframes mpmSpin { to { transform:rotate(360deg); } }
+  .mpm-spinner { display:inline-block;animation:mpmSpin 1s linear infinite;will-change:transform; }
+  /* success panel */
+  .mpm-success { display:none;flex-direction:column;align-items:center;gap:14px;text-align:center; }
+  .mpm-card.success .mpm-success { display:flex; }
+  .mpm-card.success .mpm-steps   { display:none; }
+  .mpm-card.success .mpm-subtitle { display:none; }
+  .mpm-success-img { width:180px;height:180px;border-radius:10px;border:2px solid rgba(20,241,149,0.3); }
+  .mpm-success-info { font-size:11px;color:#777;line-height:2; }
+  /* error panel */
+  .mpm-error { display:none;flex-direction:column;align-items:center;gap:12px;text-align:center; }
+  .mpm-card.error .mpm-error  { display:flex; }
+  .mpm-card.error .mpm-steps  { display:none; }
+  .mpm-card.error .mpm-subtitle { display:none; }
+  .mpm-footer { display:flex;gap:10px;justify-content:center; }
+  .mpm-step-body { flex:1; }
+  .mpm-success-title { font-size:14px;color:#14F195;letter-spacing:3px; }
+  .mpm-error-msg { font-size:13px;color:#f84; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="hud"></div>
+<div id="mintToast"></div>
+
+<!-- ── Mint progress modal ──────────────────────────────────────────────────── -->
+<div id="mintProgressModal">
+  <div class="mpm-card" id="mpmCard">
+    <div class="mpm-title">⬡ MINTING NFT</div>
+    <div class="mpm-subtitle" id="mpmSubtitle">Do not close this window</div>
+
+    <div class="mpm-steps">
+      <div class="mpm-step" id="mpmStep1">
+        <div class="mpm-icon" id="mpmIcon1">1</div>
+        <div class="mpm-step-body"><div class="mpm-label">Render tank image</div></div>
+      </div>
+      <div class="mpm-step" id="mpmStep2">
+        <div class="mpm-icon" id="mpmIcon2">2</div>
+        <div class="mpm-step-body">
+          <div class="mpm-label">Upload image to Arweave</div>
+          <div class="mpm-sub" id="mpmSub2"></div>
+        </div>
+      </div>
+      <div class="mpm-step" id="mpmStep3">
+        <div class="mpm-icon" id="mpmIcon3">3</div>
+        <div class="mpm-step-body">
+          <div class="mpm-label">Upload metadata to Arweave</div>
+          <div class="mpm-sub" id="mpmSub3"></div>
+        </div>
+      </div>
+      <div class="mpm-step" id="mpmStep4">
+        <div class="mpm-icon" id="mpmIcon4">4</div>
+        <div class="mpm-step-body">
+          <div class="mpm-label">Create NFT on-chain</div>
+          <div class="mpm-sub" id="mpmSub4">Approve transaction in Phantom</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mpm-success" id="mpmSuccess">
+      <div class="mpm-success-title">✓ NFT MINTED</div>
+      <img class="mpm-success-img" id="mpmSuccessImg" src="" alt="">
+      <div class="mpm-success-info" id="mpmSuccessInfo"></div>
+      <div class="mpm-footer">
+        <button type="button" id="mpmDownloadBtn">⬇ Download PNG</button>
+        <button type="button" onclick="closeMintModal()">✕ Close</button>
+      </div>
+    </div>
+
+    <div class="mpm-error" id="mpmError">
+      <div class="mpm-error-msg" id="mpmErrorMsg"></div>
+      <div class="mpm-footer">
+        <button type="button" onclick="closeMintModal()">✕ Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="lobby">
+  <h1>⊞ TANK BATTLE</h1><h2>GENE WARFARE</h2>
+
+  <!-- WALLET BAR -->
+  <div id="walletBar">
+    <div class="phantom-logo">👻</div>
+    <div class="wallet-info" id="walletInfo">
+      <span class="wallet-label">PHANTOM WALLET</span>
+      <span class="wallet-address" id="walletAddress">Not connected</span>
+      <span class="wallet-balance" id="walletBalance" style="display:none"></span>
+    </div>
+    <button class="wallet-btn" id="walletBtn" onclick="toggleWallet()">Connect Wallet</button>
+  </div>
+
+  <!-- NFT COLLECTION (shown when connected + has NFTs) -->
+  <div id="nftStrip" style="display:none">
+    <div class="lobby-section">
+      <h3>YOUR TANK NFTs <span id="nftCount" style="color:#555"></span></h3>
+      <div class="nft-grid" id="nftGrid"></div>
+    </div>
+  </div>
+
+  <!-- TANK GENE -->
+  <div class="lobby-section">
+    <h3>YOUR TANK GENE</h3>
+    <div style="display:flex;gap:16px;align-items:center">
+      <canvas id="tankPreview" width="140" height="140" style="border:1px solid rgba(255,255,255,0.1);border-radius:6px;background:#1a1a0a;flex-shrink:0"></canvas>
+      <div class="gene-stats" id="geneStats"></div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+      <span style="font-size:11px;color:#666;">Name:</span>
+      <input id="tankNameInput" value="Tank #001" maxlength="24"
+        style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:5px;color:#fff;font-family:Courier New;font-size:13px;padding:5px 10px;width:180px;outline:none;">
+    </div>
+    <div class="controls">
+      <button onclick="randomizeGene()">🔀 Random</button>
+      <button onclick="randomizeGene('heavy')">🛡 Heavy</button>
+      <button onclick="randomizeGene('speed')">⚡ Speed</button>
+      <button onclick="randomizeGene('sniper')">🎯 Sniper</button>
+      <button onclick="previewNFT()">🖼 Preview NFT</button>
+      <button class="mint-btn" id="mintBtn" onclick="mintCurrentTank()" disabled title="Connect wallet to mint">⬡ Mint NFT</button>
+    </div>
+  </div>
+
+  <button class="primary" onclick="openPreBattle()">▶ Sandbox Battle</button>
+</div>
+
+<div id="preBattle">
+  <h2>SANDBOX BATTLE</h2>
+  <div class="pb-row">
+    <!-- YOUR TANK -->
+    <div class="lobby-section">
+      <h3>YOUR TANK</h3>
+      <div class="pb-tank-info">
+        <canvas id="pbTankCanvas" width="100" height="100"></canvas>
+        <div class="pb-tank-meta">
+          <div id="pbTankName"></div>
+          <div id="pbRarity"></div>
+          <div id="pbStats" class="gene-stats"></div>
+        </div>
+      </div>
+    </div>
+    <!-- BOTS -->
+    <div class="lobby-section">
+      <h3>BOTS</h3>
+      <div class="player-list" id="playerList"></div>
+      <div class="controls">
+        <button type="button" onclick="addBot()">+ Add Bot</button>
+        <button type="button" onclick="removeBot()">− Remove Bot</button>
+      </div>
+    </div>
+  </div>
+  <!-- CONTROLS -->
+  <div class="lobby-section pb-full">
+    <h3>CONTROLS</h3>
+    <div class="key-help">
+      ↑ ↓ — Move &nbsp;|&nbsp; ← → — Rotate tank (turret follows)<br>
+      A D — Fine-tune turret only &nbsp;|&nbsp; SPACE — Fire<br>
+      Collect <span class="repair-kit-color">⊕ repair kits</span> to restore HP &nbsp;|&nbsp; Q — Quit
+    </div>
+  </div>
+  <div class="pb-actions">
+    <button type="button" onclick="closePreBattle()">← Back</button>
+    <button type="button" class="primary" onclick="startGame()">▶ Launch Battle</button>
+  </div>
+</div>
+
+<div id="gameOver">
+  <h2>BATTLE OVER</h2>
+  <div class="scoreboard" id="scoreboard"></div>
+  <button class="primary" onclick="returnToLobby()">↩ Return to Lobby</button>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

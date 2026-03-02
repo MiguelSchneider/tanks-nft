@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "@irys/sdk": "^0.2.11",
+    "@irys/web-upload": "^0.0.15",
+    "@irys/web-upload-solana": "^0.1.8",
+    "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
+    "@metaplex-foundation/umi": "^1.5.1",
+    "@metaplex-foundation/umi-bundle-defaults": "^1.5.1",
+    "@metaplex-foundation/umi-signer-wallet-adapters": "^1.5.1",
+    "@solana/web3.js": "^1.98.4",
+    "buffer": "^6.0.3",
+    "vite": "^7.3.1"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "create-collection": "node scripts/create-collection.mjs"
+  },
+  "devDependencies": {
+    "vite-plugin-node-polyfills": "^0.25.0"
+  }
+}
