@@ -3,7 +3,7 @@ import { walletState } from '../wallet.js';
 import { getPlayerGene, setPlayerGene, getBots, setBots, gameState } from './state.js';
 import { createGene, genePreset, calcRarity } from './gene.js';
 import { drawTankAt, showNFTPreview, renderTankNFTImage } from './renderer.js';
-import { shortenAddr } from './utils.js';
+import { shortenAddr, randomTankName } from './utils.js';
 
 export function initLobby() {
   setPlayerGene(createGene());
@@ -11,12 +11,16 @@ export function initLobby() {
     { name: 'Panzer', gene: createGene() },
     { name: 'Blitz',  gene: createGene() },
   ]);
+  const nameInput = document.getElementById('tankNameInput');
+  if (nameInput) nameInput.value = randomTankName();
   updateLobbyUI();
 }
 
 export function randomizeGene(t) {
   setPlayerGene(t ? genePreset(t) : createGene());
   gameState.selectedNFTIndex = null;
+  const nameInput = document.getElementById('tankNameInput');
+  if (nameInput) nameInput.value = randomTankName(t);
   updateLobbyUI();
 }
 

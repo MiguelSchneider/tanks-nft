@@ -8,6 +8,30 @@ export function lerpColor(c1, c2, t) { return [c1[0] + (c2[0] - c1[0]) * t | 0, 
 export function shortenAddr(addr) { return addr.slice(0, 4) + '...' + addr.slice(-4); }
 export function randHsl(hmin, hmax, s, l) { return `hsl(${randi(hmin, hmax)},${s}%,${l}%)`; }
 
+const _TANK_ADJ = {
+  any:    ['Iron', 'Steel', 'Thunder', 'Shadow', 'Blazing', 'Arctic', 'Desert', 'Phantom',
+           'Ghost', 'Titan', 'Crimson', 'Midnight', 'Silent', 'Wild', 'Fury', 'Infernal',
+           'Scorched', 'Frozen', 'Grim', 'Raging', 'Deadly', 'Ruthless', 'Battered', 'Gilded'],
+  heavy:  ['Iron', 'Steel', 'Armored', 'Heavy', 'Titan', 'Colossal', 'Massive', 'Fortified'],
+  speed:  ['Swift', 'Phantom', 'Ghost', 'Silent', 'Racing', 'Rapid', 'Blurred', 'Flash'],
+  sniper: ['Silent', 'Phantom', 'Shadow', 'Cold', 'Precise', 'Unseen', 'Distant', 'Lone'],
+};
+const _TANK_NOUN = {
+  any:    ['Panther', 'Tiger', 'Eagle', 'Wolf', 'Bear', 'Cobra', 'Viper', 'Stallion',
+           'Hawk', 'Falcon', 'Tempest', 'Fang', 'Crusher', 'Hunter', 'Juggernaut',
+           'Reaper', 'Specter', 'Marauder', 'Rhino', 'Sentinel', 'Warden', 'Rex', 'Claw'],
+  heavy:  ['Juggernaut', 'Bear', 'Rhino', 'Crusher', 'Titan', 'Warden', 'Mammoth', 'Colossus'],
+  speed:  ['Viper', 'Falcon', 'Fox', 'Hawk', 'Streak', 'Dart', 'Racer', 'Bolt'],
+  sniper: ['Eagle', 'Hawk', 'Reaper', 'Specter', 'Falcon', 'Lynx', 'Wraith', 'Shade'],
+};
+export function randomTankName(type) {
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const adj  = pick(_TANK_ADJ[type]  || _TANK_ADJ.any);
+  const noun = pick(_TANK_NOUN[type] || _TANK_NOUN.any);
+  const suffix = Math.random() < 0.22 ? ` Mk.${Math.floor(Math.random() * 5) + 2}` : '';
+  return adj + ' ' + noun + suffix;
+}
+
 const _rgbCache = new Map(), _shadeCache = new Map();
 
 export function hexToRgb(hex) {
