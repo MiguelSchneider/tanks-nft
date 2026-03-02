@@ -272,6 +272,7 @@ export class Tank {
     this.fireCooldown = 0; this.flashTimer = 0; this.thrustDir = 0; this.trackOffset = 0;
     this.botThinkTimer = 0; this.botTargetAngle = undefined; this.botTurretTarget = undefined;
     this.botWantFire = false; this.botWantMove = 0; this.botEvadeTimer = 0; this.botEvadeAngle = 0;
+    this.bodyRotTimer = 0; this.turretRotTimer = 0;
   }
   get radius() { return Math.max(this.gene.bodyW, this.gene.bodyH) * 0.85; }
   update() {
@@ -315,10 +316,29 @@ export class Tank {
     });
   }
   updateHuman() {
-    const g = this.gene; let bodyRot = 0;
-    if (keys['ArrowLeft']) { this.angle -= g.rotSpeed; bodyRot = -g.rotSpeed; }
-    if (keys['ArrowRight']) { this.angle += g.rotSpeed; bodyRot = g.rotSpeed; }
-    this.turretAngle += bodyRot;
+    const g = this.gene;
+    const DEG = Math.PI / 180;
+    // Delay between 1° steps: faster gene = shorter delay (fewer frames to wait)
+    const bodyDelay   = Math.max(1, Math.round(0.06 / g.rotSpeed));
+    const turretDelay = Math.max(1, Math.round(0.12 / g.turretSpeed));
+
+    // Body rotation — exactly +1° or -1° per step, throttled by bodyDelay
+    let bodyRotDelta = 0;
+    const rotLeft  = keys['ArrowLeft']  && !keys['ArrowRight'];
+    const rotRight = keys['ArrowRight'] && !keys['ArrowLeft'];
+    if (rotLeft || rotRight) {
+      if (this.bodyRotTimer <= 0) {
+        const dir = rotLeft ? -1 : 1;
+        this.angle += dir * DEG;
+        bodyRotDelta = dir * DEG;
+        this.bodyRotTimer = bodyDelay;
+      }
+      this.bodyRotTimer--;
+    } else {
+      this.bodyRotTimer = 0;
+    }
+    this.turretAngle += bodyRotDelta;
+
     if (keys['ArrowUp'] && this.fuel > 0) {
       this.vx += Math.cos(this.angle - Math.PI / 2) * g.moveSpeed * 0.3;
       this.vy += Math.sin(this.angle - Math.PI / 2) * g.moveSpeed * 0.3;
@@ -331,9 +351,20 @@ export class Tank {
       this.thrustDir = -1;
       if (isFinite(this.fuel)) this.fuel = Math.max(0, this.fuel - 1);
     }
-    const fineSpeed = g.rotSpeed * 0.35;
-    if (keys['a'] || keys['A']) this.turretAngle -= fineSpeed;
-    if (keys['d'] || keys['D']) this.turretAngle += fineSpeed;
+
+    // Turret fine rotation — exactly +1° or -1° per step, throttled by turretDelay
+    const turLeft  = (keys['a'] || keys['A']) && !(keys['d'] || keys['D']);
+    const turRight = (keys['d'] || keys['D']) && !(keys['a'] || keys['A']);
+    if (turLeft || turRight) {
+      if (this.turretRotTimer <= 0) {
+        this.turretAngle += (turLeft ? -1 : 1) * DEG;
+        this.turretRotTimer = turretDelay;
+      }
+      this.turretRotTimer--;
+    } else {
+      this.turretRotTimer = 0;
+    }
+
     if (keys[' '] && this.fireCooldown <= 0) this.fire();
   }
   updateBot() {
@@ -363,8 +394,17 @@ export class Tank {
       }
     }
     if (this.botEvadeTimer > 0) this.botEvadeTimer--;
+    const DEG = Math.PI / 180;
+    const bodyDelay   = Math.max(1, Math.round(0.06 / g.rotSpeed));
+    const turretDelay = Math.max(1, Math.round(0.12 / g.turretSpeed));
     let bodyRot = 0;
-    if (this.botTargetAngle !== undefined) { const da = angleDiff(this.angle, this.botTargetAngle); if (da > 0.05) { this.angle += g.rotSpeed; bodyRot = g.rotSpeed; } else if (da < -0.05) { this.angle -= g.rotSpeed; bodyRot = -g.rotSpeed; } }
+    if (this.botTargetAngle !== undefined) {
+      const da = angleDiff(this.angle, this.botTargetAngle);
+      if (Math.abs(da) > 0.05) {
+        if (this.bodyRotTimer <= 0) { const dir = da > 0 ? 1 : -1; this.angle += dir * DEG; bodyRot = dir * DEG; this.bodyRotTimer = bodyDelay; }
+        this.bodyRotTimer--;
+      } else { this.bodyRotTimer = 0; }
+    }
     this.turretAngle += bodyRot;
     if (this.botWantMove && this.fuel > 0) {
       this.vx += Math.cos(this.angle - Math.PI / 2) * g.moveSpeed * 0.3;
@@ -372,7 +412,13 @@ export class Tank {
       this.thrustDir = 1;
       if (isFinite(this.fuel)) this.fuel = Math.max(0, this.fuel - 1);
     }
-    if (this.botTurretTarget !== undefined) { const da = angleDiff(this.turretAngle, this.botTurretTarget); if (da > 0.04) this.turretAngle += g.turretSpeed; else if (da < -0.04) this.turretAngle -= g.turretSpeed; }
+    if (this.botTurretTarget !== undefined) {
+      const da = angleDiff(this.turretAngle, this.botTurretTarget);
+      if (Math.abs(da) > 0.04) {
+        if (this.turretRotTimer <= 0) { this.turretAngle += (da > 0 ? 1 : -1) * DEG; this.turretRotTimer = turretDelay; }
+        this.turretRotTimer--;
+      } else { this.turretRotTimer = 0; }
+    }
     if (this.botWantFire && this.fireCooldown <= 0) this.fire();
   }
   fire() {

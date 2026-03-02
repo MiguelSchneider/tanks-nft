@@ -89,10 +89,12 @@ export function openPreBattle() {
   rarEl.style.color = rarity.color;
 
   const stats = [
-    ['HP',        gene.maxHp      / 180],
-    ['Speed',     gene.moveSpeed  / 3.2],
-    ['Fire Rate', gene.fireRate   / 3.5],
-    ['Damage',    gene.bulletDmg  / 52],
+    ['HP',         gene.maxHp      / 180],
+    ['Speed',      gene.moveSpeed  / 3.2],
+    ['Rotation',   gene.rotSpeed   / 0.058],
+    ['Fire Rate',  gene.fireRate   / 3.5],
+    ['Bullet Spd', gene.bulletSpd  / 10],
+    ['Damage',     gene.bulletDmg  / 52],
     ...(gene.maxFuel != null ? [['Fuel Tank', gene.maxFuel / 2400]] : []),
   ];
   document.getElementById('pbStats').innerHTML = stats.map(([n, v]) =>
