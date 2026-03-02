@@ -7,7 +7,6 @@ import {
 import { Tank } from './entities.js';
 import { generateGround, generateObstacles, generateRepairKits, generateFuelKits, drawGround, updateRepairKits, updateFuelKits } from './world.js';
 import { updateParticles, drawParticles, spawnDust, spawnHitSpark } from './particles.js';
-import { sfxBump } from './audio.js';
 import { dist } from './utils.js';
 import { updateLobbyUI } from './lobby.js';
 
@@ -114,7 +113,6 @@ export function gameLoop() {
         const nx = (tb.x - ta.x) / d, ny = (tb.y - ta.y) / d, ov = (r - d) / 2;
         ta.x -= nx * ov; ta.y -= ny * ov; tb.x += nx * ov; tb.y += ny * ov;
         ta.vx *= 0.3; ta.vy *= 0.3; tb.vx *= 0.3; tb.vy *= 0.3;
-        sfxBump();
       }
     }
   }

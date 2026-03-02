@@ -301,7 +301,7 @@ export class Tank {
       });
       if (!resolved) break;
     }
-    if (bumped) { this.vx *= 0.3; this.vy *= 0.3; sfxBump(); }
+    if (bumped) { this.vx *= 0.3; this.vy *= 0.3; if (!this.isBot) sfxBump(); }
     repairKits.forEach(kit => {
       if (!kit.alive) return;
       if (dist(this, kit) < this.radius + kit.r) { const heal = this.gene.maxHp * 0.35; this.hp = Math.min(this.gene.maxHp, this.hp + heal); kit.alive = false; spawnRepairEffect(kit.x, kit.y); }

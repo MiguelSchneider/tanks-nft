@@ -31,7 +31,8 @@ export function playNoise(dur, gain, ff) {
 
 export function sfxFire()    { playTone(180, 'sawtooth', 0.22, 0.3, 340); playNoise(0.15, 0.25, 1200); }
 export function sfxHit()     { playNoise(0.1, 0.35, 600); playTone(100, 'sine', 0.1, 0.2); }
-export function sfxBump()    { playNoise(0.12, 0.3, 300); playTone(70, 'sine', 0.15, 0.18); }
+let _bumpLast = 0;
+export function sfxBump()    { const now = Date.now(); if (now - _bumpLast < 300) return; _bumpLast = now; playNoise(0.12, 0.3, 300); playTone(70, 'sine', 0.15, 0.18); }
 export function sfxExplode() { playNoise(0.7, 0.6, 280); playNoise(0.4, 0.35, 140); playTone(55, 'sine', 0.6, 0.25, 110); }
 export function sfxRespawn() { playTone(330, 'sine', 0.1, 0.1); playTone(550, 'sine', 0.1, 0.1); playTone(770, 'sine', 0.18, 0.15); }
 export function sfxCrumble() { playNoise(0.35, 0.4, 400); playTone(90, 'sawtooth', 0.3, 0.2, 160); }
