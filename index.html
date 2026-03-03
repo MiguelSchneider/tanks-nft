@@ -12,6 +12,16 @@
       user-select: none;
     }
 
+    /* Ensure AppKit modal backdrop doesn't block game UI when modal is closed */
+    appkit-modal::part(backdrop),
+    w3m-modal::part(backdrop) {
+      pointer-events: none;
+    }
+    appkit-modal[open]::part(backdrop),
+    w3m-modal[open]::part(backdrop) {
+      pointer-events: auto;
+    }
+
     body {
       background: #000;
       color: #fff;
@@ -775,7 +785,7 @@
       <div class="wallet-logo">◎</div>
       <div class="wallet-info" id="walletInfo">
         <span class="wallet-label">SOLANA WALLET</span>
-        <span class="wallet-address" id="walletAddress">Connect your wallet to load all of your tanks and create your own NFTs</span>
+        <span class="wallet-address" id="walletAddress">Connect your wallet to load all of your tanks and create your own NFTs <br/> This currently only works on the Solana devnet. Setup your wallet accordingly.</span>
         <span class="wallet-balance" id="walletBalance" style="display:none"></span>
       </div>
       <button class="wallet-btn" id="walletBtn" onclick="toggleWallet()">Connect Wallet</button>
