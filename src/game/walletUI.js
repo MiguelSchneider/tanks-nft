@@ -4,15 +4,10 @@ import { shortenAddr } from './utils.js';
 import { showToast } from './toast.js';
 
 export function toggleWallet() {
-  if (!window.disconnectWallet) { showToast('Loading wallet module…', 1500, '#aaa'); return; }
   if (walletState.connected) {
     window.disconnectWallet();
   } else {
-    showToast('Connecting to Phantom…', 2000, '#9945FF');
-    window.connectWallet().catch(e => {
-      if (e.code === 4001) showToast('Connection rejected by user.', 2500, '#f84');
-      else showToast('Connection error: ' + e.message, 3000, '#f84');
-    });
+    window.connectWallet();
   }
 }
 

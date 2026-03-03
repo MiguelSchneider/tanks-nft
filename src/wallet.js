@@ -1,11 +1,33 @@
 import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js'
+import { createAppKit } from '@reown/appkit'
+import { SolanaAdapter } from '@reown/appkit-adapter-solana'
+import { solanaDevnet } from '@reown/appkit/networks'
 
+// ── Reown AppKit Configuration ───────────────────────────────────────────────
+const PROJECT_ID = '9d05d4b1b35fad1c007771dc63f9911d'
+
+const solanaAdapter = new SolanaAdapter()
+
+const appKit = createAppKit({
+  adapters: [solanaAdapter],
+  projectId: PROJECT_ID,
+  networks: [solanaDevnet],
+  metadata: {
+    name: 'Tank Battle',
+    description: 'Gene Warfare — 2D Tank Battle with Solana NFTs',
+    url: window.location.origin,
+    icons: [],
+  },
+})
+
+// ── Solana Connection (devnet) ───────────────────────────────────────────────
 let _conn = null
 export function getConnection() {
   if (!_conn) _conn = new Connection(clusterApiUrl('devnet'), 'confirmed')
   return _conn
 }
 
+// ── Wallet State (same interface as before) ──────────────────────────────────
 export const walletState = {
   connected: false,
   address: null,
@@ -15,65 +37,59 @@ export const walletState = {
   nftsLoading: false,
 }
 
-export function getPhantom() {
-  return window?.phantom?.solana || window?.solana
+// ── Provider Access (for mint.js / Irys) ─────────────────────────────────────
+let _solanaProvider = null
+
+appKit.subscribeProviders(state => {
+  _solanaProvider = state['solana'] ?? null
+})
+
+export function getProvider() {
+  return _solanaProvider
 }
 
-export function isPhantomInstalled() {
-  return getPhantom()?.isPhantom === true
-}
-
+// ── Connect / Disconnect ─────────────────────────────────────────────────────
 export async function connectWallet() {
-  if (!isPhantomInstalled()) {
-    window.open('https://phantom.app', '_blank')
-    throw new Error('Phantom no instalado')
-  }
-  const phantom = getPhantom()
-  const resp = await phantom.connect()
-  const publicKey = resp.publicKey
-  const address = publicKey.toString()
-  const balance = await fetchSOLBalance(address)
-  Object.assign(walletState, {
-    connected: true, address, publicKey, balance,
-    nfts: [], nftsLoading: false,
-  })
-  phantom.on('accountChanged', (pk) => {
-    if (pk) {
-      walletState.address = pk.toString()
-      walletState.publicKey = pk
-      walletState.nfts = []
-      walletState.nftsLoading = false
-      window.dispatchEvent(new CustomEvent('walletChanged'))
-    } else {
-      disconnectWallet()
-    }
-  })
-  window.dispatchEvent(new CustomEvent('walletConnected'))
-  return walletState
+  appKit.open()
 }
 
 export async function disconnectWallet() {
-  try { await getPhantom()?.disconnect() } catch (e) {}
-  Object.assign(walletState, { connected: false, address: null, publicKey: null, balance: null, nfts: [], nftsLoading: false })
+  try { await appKit.getWalletProvider()?.disconnect?.() } catch (e) {}
+  try { await appKit.adapter?.connectionControllerClient?.disconnect?.() } catch (e) {}
+  Object.assign(walletState, {
+    connected: false, address: null, publicKey: null, balance: null,
+    nfts: [], nftsLoading: false,
+  })
   window.dispatchEvent(new CustomEvent('walletDisconnected'))
 }
 
-export async function autoReconnect() {
-  const p = getPhantom()
-  if (!p?.isConnected) return
-  try {
-    const resp = await p.connect({ onlyIfTrusted: true })
-    const publicKey = resp.publicKey
-    const address = publicKey.toString()
+// ── Subscribe to Account Changes ─────────────────────────────────────────────
+appKit.subscribeAccount(async ({ address, isConnected }) => {
+  if (isConnected && address) {
     const balance = await fetchSOLBalance(address)
+    const prevAddress = walletState.address
     Object.assign(walletState, {
-      connected: true, address, publicKey, balance,
+      connected: true,
+      address,
+      publicKey: new PublicKey(address),
+      balance,
       nfts: [], nftsLoading: false,
     })
-    window.dispatchEvent(new CustomEvent('walletConnected'))
-  } catch (e) {}
-}
+    if (prevAddress && prevAddress !== address) {
+      window.dispatchEvent(new CustomEvent('walletChanged'))
+    } else if (!prevAddress) {
+      window.dispatchEvent(new CustomEvent('walletConnected'))
+    }
+  } else if (!isConnected && walletState.connected) {
+    Object.assign(walletState, {
+      connected: false, address: null, publicKey: null, balance: null,
+      nfts: [], nftsLoading: false,
+    })
+    window.dispatchEvent(new CustomEvent('walletDisconnected'))
+  }
+})
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
 export async function fetchSOLBalance(address) {
   try {
     const lamports = await getConnection().getBalance(new PublicKey(address))

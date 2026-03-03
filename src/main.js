@@ -1,4 +1,4 @@
-import { connectWallet, disconnectWallet, autoReconnect, walletState, shortenAddr } from './wallet.js'
+import { connectWallet, disconnectWallet, walletState, shortenAddr } from './wallet.js'
 import './game/init.js'
 
 // Expose wallet functions to HTML
@@ -44,5 +44,4 @@ async function loadChainNFTs(address) {
 window.addEventListener('walletConnected',    () => loadChainNFTs(walletState.address))
 window.addEventListener('walletChanged',      () => { if (walletState.connected) loadChainNFTs(walletState.address) })
 
-// Auto-reconnect if a previous session exists
-autoReconnect()
+// AppKit handles session persistence / auto-reconnect automatically

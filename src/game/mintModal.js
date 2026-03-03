@@ -20,7 +20,7 @@ export function openMintModal(tankName) {
   });
   document.getElementById('mpmSub2').textContent = '';
   document.getElementById('mpmSub3').textContent = '';
-  document.getElementById('mpmSub4').textContent = 'Approve transaction in Phantom';
+  document.getElementById('mpmSub4').textContent = 'Approve transaction in your wallet';
   document.getElementById('mintProgressModal').classList.add('open');
 }
 

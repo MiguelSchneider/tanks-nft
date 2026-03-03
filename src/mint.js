@@ -28,34 +28,39 @@ import {
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters'
 import { WebUploader } from '@irys/web-upload'
 import { WebSolana } from '@irys/web-upload-solana'
-import { walletState, getConnection } from './wallet.js'
+import { walletState, getConnection, getProvider } from './wallet.js'
 
 export const COLLECTION_MINT_ADDRESS = '8JReTZqNFzFA2hXNGWxkGdcQUWdYkLWkYQLbfsJsS2zn'
 
 function buildUmi() {
-  const phantom = window.phantom?.solana
-  if (!phantom?.publicKey) throw new Error('Phantom no está conectado')
+  const provider = getProvider()
+  if (!provider?.publicKey) throw new Error('Wallet not connected')
   const umi = createUmi('https://api.devnet.solana.com').use(mplTokenMetadata())
-  umi.use(walletAdapterIdentity(phantom))
+  umi.use(walletAdapterIdentity(provider))
   return umi
 }
 
-// Build a wallet-adapter-compatible provider from Phantom's injected API.
-// Phantom's raw provider lacks sendTransaction (it has signAndSendTransaction instead),
-// and signMessage returns { signature: Uint8Array } instead of a raw Uint8Array.
+// Build a wallet-adapter-compatible provider for Irys from the AppKit provider.
 // Irys fund() calls sendTransaction(tx, connection), so we implement it explicitly.
+// signMessage may return { signature: Uint8Array } or raw Uint8Array depending on wallet.
 function getIrysProvider() {
-  const phantom = window.phantom.solana
+  const provider = getProvider()
+  if (!provider) throw new Error('Wallet not connected')
   return {
-    publicKey: phantom.publicKey,
+    publicKey: provider.publicKey,
     signMessage: async (msg) => {
-      const result = await phantom.signMessage(msg)
+      const result = await provider.signMessage(msg)
       return result?.signature instanceof Uint8Array ? result.signature : result
     },
-    signTransaction: tx => phantom.signTransaction(tx),
-    signAllTransactions: txs => phantom.signAllTransactions(txs),
+    signTransaction: tx => provider.signTransaction(tx),
+    signAllTransactions: txs => provider.signAllTransactions
+      ? provider.signAllTransactions(txs)
+      : Promise.all(txs.map(tx => provider.signTransaction(tx))),
     sendTransaction: async (tx, conn) => {
-      const signed = await phantom.signTransaction(tx)
+      if (provider.sendTransaction) {
+        return provider.sendTransaction(tx, conn ?? getConnection())
+      }
+      const signed = await provider.signTransaction(tx)
       return (conn ?? getConnection()).sendRawTransaction(signed.serialize())
     },
   }
@@ -82,7 +87,7 @@ async function uploadToArweave(data, contentType, onProgress) {
     irys.getLoadedBalance(),
   ])
   if (balance.isLessThan(price)) {
-    onProgress?.('Funding Irys account — approve in Phantom…')
+    onProgress?.('Funding Irys account — approve in your wallet…')
     await irys.fund(price.multipliedBy(1.2).integerValue())
   }
 
@@ -150,7 +155,7 @@ export async function mintTankNFT(gene, tankName, renderNFTImageFn, onProgress) 
   const metadataUrl = await uploadToArweave(metaBuffer, 'application/json', onProgress)
   console.log('✓ Metadata:', metadataUrl)
 
-  onProgress('Creating NFT on-chain — approve signature in Phantom…')
+  onProgress('Creating NFT on-chain — approve signature in your wallet…')
   const umi = buildUmi()
   const mintSigner = generateSigner(umi)
   const hasCollection = COLLECTION_MINT_ADDRESS !== 'PON_AQUI_TU_COLLECTION_ADDRESS'
