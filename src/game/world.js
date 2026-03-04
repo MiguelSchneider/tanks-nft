@@ -14,7 +14,8 @@ export function generateObstacles() {
     { x: WORLD / 2 - 60, y: WORLD / 2, w: 28, h: 130, hp: 160 }, { x: WORLD / 2 + 60, y: WORLD / 2, w: 28, h: 130, hp: 160 },
   ];
   fixed.forEach(l => obstacles.push(new Obstacle(l.x, l.y, l.w, l.h, l.hp)));
-  for (let i = 0; i < 24; i++) obstacles.push(new Obstacle(300 + Math.random() * (WORLD - 600), 300 + Math.random() * (WORLD - 600), 20 + Math.random() * 55, 20 + Math.random() * 55, 60 + Math.random() * 110));
+  const maxObstacles =  20 + Math.floor(100 * Math.random());;
+  for (let i = 0; i < maxObstacles; i++) obstacles.push(new Obstacle(300 + Math.random() * (WORLD - 600), 300 + Math.random() * (WORLD - 600), 20 + Math.random() * 55, 20 + Math.random() * 55, 60 + Math.random() * 110));
 }
 
 export function generateRepairKits() {

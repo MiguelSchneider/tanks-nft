@@ -278,7 +278,28 @@ export class Tank {
   update() {
     if (!this.alive) {
       this.respawnTimer--;
-      if (this.respawnTimer <= 0) { this.alive = true; this.hp = this.gene.maxHp; this.fuel = (this.gene.maxFuel != null) ? this.gene.maxFuel : Infinity; this.vx = 0; this.vy = 0; this.x = 200 + Math.random() * (WORLD - 400); this.y = 200 + Math.random() * (WORLD - 400); sfxRespawn(); }
+      if (this.respawnTimer <= 0) {
+        this.alive = true; this.hp = this.gene.maxHp; this.fuel = (this.gene.maxFuel != null) ? this.gene.maxFuel : Infinity; this.vx = 0; this.vy = 0;
+        // Find a clear respawn position away from obstacles and other tanks
+        const pad = 250, margin = 60, r = this.radius;
+        let bestX = WORLD / 2, bestY = WORLD / 2, bestMinDist = -1;
+        for (let attempt = 0; attempt < 100; attempt++) {
+          const cx = pad + Math.random() * (WORLD - pad * 2);
+          const cy = pad + Math.random() * (WORLD - pad * 2);
+          // Check generous clearance from every obstacle
+          let blocked = false;
+          for (const ob of obstacles) {
+            if (!ob.alive) continue;
+            if (Math.abs(cx - ob.x) < ob.w / 2 + r + margin &&
+                Math.abs(cy - ob.y) < ob.h / 2 + r + margin) { blocked = true; break; }
+          }
+          if (blocked) continue;
+          const minD = tanks.reduce((m, t) => t !== this && t.alive ? Math.min(m, dist({ x: cx, y: cy }, t)) : m, Infinity);
+          if (minD > bestMinDist) { bestMinDist = minD; bestX = cx; bestY = cy; }
+        }
+        this.x = bestX; this.y = bestY;
+        sfxRespawn();
+      }
       return;
     }
     if (this.flashTimer > 0) this.flashTimer--; if (this.fireCooldown > 0) this.fireCooldown--; this.thrustDir = 0;

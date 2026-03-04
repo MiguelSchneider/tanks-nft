@@ -10,6 +10,61 @@ import { updateParticles, drawParticles, spawnDust, spawnHitSpark } from './part
 import { dist } from './utils.js';
 import { updateLobbyUI } from './lobby.js';
 
+// Check that position (x,y) is clear of ALL obstacles with generous spacing
+function isPositionClear(x, y, radius, margin) {
+  for (const ob of obstacles) {
+    if (!ob.alive) continue;
+    // Use a generous clearance: tank radius + extra margin around each obstacle
+    if (Math.abs(x - ob.x) < ob.w / 2 + radius + margin &&
+        Math.abs(y - ob.y) < ob.h / 2 + radius + margin) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Find a spawn position that doesn't overlap any obstacle
+function findClearPosition(radius, margin = 60) {
+  const pad = 250; // stay away from world edges
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const x = pad + Math.random() * (WORLD - pad * 2);
+    const y = pad + Math.random() * (WORLD - pad * 2);
+    if (isPositionClear(x, y, radius, margin)) return { x, y };
+  }
+  // Fallback: return center-ish position
+  return { x: WORLD / 2, y: WORLD / 2 };
+}
+
+// Place N tanks as far apart from each other as possible, avoiding obstacles
+function findSpawnPositions(count, radius) {
+  const positions = [];
+  const candidates = 40; // candidates per tank for best-of-N selection
+  const margin = 60; // generous spacing from obstacles
+
+  for (let i = 0; i < count; i++) {
+    let bestPos = null;
+    let bestMinDist = -1;
+
+    for (let c = 0; c < candidates; c++) {
+      const pos = findClearPosition(radius, margin);
+      if (positions.length === 0) {
+        bestPos = pos;
+        break;
+      }
+      // Pick the candidate that maximizes minimum distance to all placed tanks
+      const minD = Math.min(...positions.map(p =>
+        Math.hypot(pos.x - p.x, pos.y - p.y)
+      ));
+      if (minD > bestMinDist) {
+        bestMinDist = minD;
+        bestPos = pos;
+      }
+    }
+    positions.push(bestPos);
+  }
+  return positions;
+}
+
 // Segment vs circle intersection (handles fast-bullet tunneling)
 function segCircle(x1, y1, x2, y2, cx, cy, r) {
   const dx = x2 - x1, dy = y2 - y1, fx = x1 - cx, fy = y1 - cy;
@@ -35,8 +90,8 @@ export function startGame() {
   tanks.push(new Tank(0, 'You', playerGene, false));
   bots.forEach((b, i) => tanks.push(new Tank(i + 1, b.name, b.gene, true)));
 
-  const sp = [[400, 400], [WORLD - 400, 400], [400, WORLD - 400], [WORLD - 400, WORLD - 400], [WORLD / 2, WORLD / 2]];
-  tanks.forEach((t, i) => { t.x = sp[i % sp.length][0]; t.y = sp[i % sp.length][1]; t.angle = Math.random() * Math.PI * 2; t.turretAngle = t.angle; });
+  const spawnPos = findSpawnPositions(tanks.length, tanks[0].radius);
+  tanks.forEach((t, i) => { t.x = spawnPos[i].x; t.y = spawnPos[i].y; t.angle = Math.random() * Math.PI * 2; t.turretAngle = t.angle; });
 
   const hEl = document.getElementById('hud'); hEl.innerHTML = ''; gameState.hudRefs = {};
   tanks.forEach(t => {
