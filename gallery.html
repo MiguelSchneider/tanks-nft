@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Tank Battle — Gallery</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #111;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+    }
+
+    a { color: #9945FF; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Header */
+    .gallery-header {
+      background: rgba(0, 0, 0, 0.6);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .gallery-header h1 {
+      font-size: 22px;
+      letter-spacing: 6px;
+      color: #fff;
+      text-shadow: 0 0 20px #fa0;
+    }
+
+    .header-links {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .header-links a {
+      font-size: 12px;
+      color: #fa0;
+      letter-spacing: 1px;
+    }
+
+    button {
+      background: rgba(255, 170, 0, 0.12);
+      border: 1px solid #fa0;
+      color: #fa0;
+      padding: 7px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: rgba(255, 170, 0, 0.28);
+    }
+
+    button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: #fa0;
+      color: #000;
+      font-weight: bold;
+      border: none;
+    }
+
+    button.primary:hover {
+      background: #fc4;
+    }
+
+    /* Info bar */
+    .info-bar {
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 12px;
+      color: #777;
+    }
+
+    .info-bar .collection-addr {
+      color: #9945FF;
+      font-size: 11px;
+    }
+
+    .info-bar .total-count {
+      color: #fa0;
+      font-weight: bold;
+    }
+
+    /* Filter bar */
+    .filter-bar {
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .rarity-filter {
+      display: flex;
+      gap: 6px;
+    }
+
+    .rarity-btn {
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #888;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .rarity-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .rarity-btn.active {
+      border-color: #fa0;
+      color: #fa0;
+      background: rgba(255, 170, 0, 0.1);
+    }
+
+    .sort-select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 5px;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      padding: 5px 8px;
+      outline: none;
+      margin-left: auto;
+    }
+
+    .search-input {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 5px;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      padding: 5px 10px;
+      width: 180px;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: #fa0;
+    }
+
+    /* Gallery container */
+    .gallery-grid {
+      padding: 20px 0;
+    }
+
+    /* NFT card */
+    .gallery-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .gallery-card:hover {
+      border-color: #fa0;
+      background: rgba(255, 200, 80, 0.06);
+      transform: translateY(-2px);
+    }
+
+    .gallery-card canvas,
+    .gallery-card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 6px;
+      background: #1a1a0a;
+    }
+
+    .gallery-card-name {
+      font-size: 13px;
+      color: #fff;
+      margin-top: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .gallery-card-rarity {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 4px;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+
+    .rarity-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .gallery-card-owner {
+      font-size: 10px;
+      color: #777;
+      margin-top: 6px;
+    }
+
+    .gallery-card-owner a {
+      color: #9945FF;
+      font-size: 10px;
+    }
+
+    /* Loading / empty / error states */
+    .gallery-status {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .gallery-status .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255, 170, 0, 0.2);
+      border-top-color: #fa0;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .gallery-status .status-msg {
+      font-size: 14px;
+      color: #888;
+    }
+
+    .gallery-status .error-msg {
+      font-size: 13px;
+      color: #f84;
+      max-width: 500px;
+    }
+
+    /* Detail modal */
+    .detail-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+
+    .detail-overlay.open {
+      display: flex;
+    }
+
+    .detail-card {
+      background: #0a0a0a;
+      border: 1px solid rgba(255, 200, 80, 0.2);
+      border-radius: 14px;
+      padding: 28px;
+      width: 560px;
+      max-width: 96vw;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .detail-top {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .detail-canvas-wrap {
+      flex-shrink: 0;
+    }
+
+    .detail-canvas-wrap canvas,
+    .detail-canvas-wrap img {
+      display: block;
+      width: 200px;
+      height: 200px;
+      border-radius: 8px;
+      background: #1a1a0a;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .detail-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .detail-name {
+      font-size: 18px;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .detail-rarity {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .detail-field {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 6px;
+      line-height: 1.8;
+      word-break: break-all;
+    }
+
+    .detail-field span {
+      color: #ddd;
+    }
+
+    .detail-field a {
+      font-size: 11px;
+    }
+
+    .detail-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .detail-stat {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .detail-stat span {
+      color: #fa0;
+    }
+
+    .detail-stat-bar {
+      height: 4px;
+      background: #1a1a1a;
+      border-radius: 2px;
+      margin-top: 2px;
+    }
+
+    .detail-stat-fill {
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, #f84, #fa0);
+    }
+
+    .detail-traits {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .detail-trait {
+      font-size: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      padding: 4px 8px;
+      color: #aaa;
+    }
+
+    .detail-trait span {
+      color: #fff;
+    }
+
+    .detail-footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Grouped sections */
+    .gallery-group {
+      padding: 0 24px 8px;
+    }
+
+    .gallery-group + .gallery-group {
+      margin-top: 8px;
+    }
+
+    .group-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      font-size: 12px;
+      color: #888;
+      letter-spacing: 1px;
+    }
+
+    .group-header .group-label {
+      color: #fa0;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .group-header .group-label a {
+      color: #9945FF;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .group-header .group-count {
+      margin-left: auto;
+      color: #555;
+      font-size: 11px;
+    }
+
+    .group-header .rarity-dot {
+      width: 8px;
+      height: 8px;
+    }
+
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="gallery-header">
+    <h1>TANK BATTLE — GALLERY</h1>
+    <div class="header-links">
+      <a href="/">Back to Game</a>
+    </div>
+  </div>
+
+  <div class="api-key-bar" id="apiKeyBar" style="display:none"></div>
+
+  <div class="info-bar" id="infoBar" style="display:none">
+    <span>Collection: <span class="collection-addr" id="collectionAddr"></span></span>
+    <span class="total-count" id="totalCount"></span>
+  </div>
+
+  <div class="filter-bar" id="filterBar" style="display:none">
+    <div class="rarity-filter" id="rarityFilter">
+      <button class="rarity-btn active" data-rarity="All">All</button>
+      <button class="rarity-btn" data-rarity="Legendary" style="color:#FFD700">Legendary</button>
+      <button class="rarity-btn" data-rarity="Epic" style="color:#A855F7">Epic</button>
+      <button class="rarity-btn" data-rarity="Rare" style="color:#3B82F6">Rare</button>
+      <button class="rarity-btn" data-rarity="Uncommon" style="color:#22C55E">Uncommon</button>
+      <button class="rarity-btn" data-rarity="Common" style="color:#9CA3AF">Common</button>
+    </div>
+    <input type="text" class="search-input" id="searchInput" placeholder="Search name / owner...">
+    <select class="sort-select" id="sortSelect">
+      <option value="owner">Sort: Owner</option>
+      <option value="rarity">Sort: Rarity</option>
+      <option value="name">Sort: Name</option>
+    </select>
+  </div>
+
+  <div id="galleryContent">
+    <div class="gallery-status" id="galleryStatus">
+      <div class="status-msg">Enter your Helius API key to load all collection NFTs.</div>
+    </div>
+  </div>
+
+  <div class="gallery-grid" id="galleryGrid" style="display:none"></div>
+
+  <div class="detail-overlay" id="detailOverlay">
+    <div class="detail-card" id="detailCard"></div>
+  </div>
+
+  <script type="module" src="/src/gallery/gallery-main.js"></script>
+</body>
+
+</html>
